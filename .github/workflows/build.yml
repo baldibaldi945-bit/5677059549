@@ -1,0 +1,33 @@
+name: Build APK
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unzip project
+        run: unzip -q PortYouStudio_kotlin_vslice_astc.zip
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: "8.7"
+      - name: Build release APK
+        working-directory: PortYouStudio
+        run: gradle :app:assembleRelease --no-daemon
+      - name: Check APK size
+        working-directory: PortYouStudio
+        run: |
+          f=$(ls app/build/outputs/apk/release/*.apk | head -1)
+          s=$(stat -c%s "$f"); echo "APK size: $((s/1024/1024)) MB"
+          test $s -le 26214400 || (echo "APK is larger than 25 MB" && exit 1)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PortYouStudio-apk
+          path: PortYouStudio/app/build/outputs/apk/release/*.apk
