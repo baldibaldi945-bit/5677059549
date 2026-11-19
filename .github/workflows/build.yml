@@ -12,6 +12,14 @@ jobs:
         run: unzip -q PortYouStudio_kotlin_vslice_astc.zip
       - name: Disable R8 shrinking
         run: sed -i 's/isMinifyEnabled = true/isMinifyEnabled = false/; s/isShrinkResources = true/isShrinkResources = false/' PortYouStudio/app/build.gradle.kts
+      - name: Add 32-bit (armeabi-v7a) support
+        run: |
+          cd PortYouStudio/app
+          sed -i 's/abiFilters += listOf("arm64-v8a")/abiFilters += listOf("arm64-v8a", "armeabi-v7a")/' build.gradle.kts
+          sed -i 's|packaging { resources.excludes|packaging { jniLibs.keepDebugSymbols += listOf("**/*.so"); resources.excludes|' build.gradle.kts
+          mkdir -p src/main/jniLibs/armeabi-v7a
+          head -c 64 /dev/zero > src/main/jniLibs/armeabi-v7a/libportyou_placeholder.so
+          grep -n "abiFilters\|keepDebugSymbols" build.gradle.kts
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
